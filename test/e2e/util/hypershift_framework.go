@@ -124,7 +124,7 @@ func (h *hypershiftTest) Execute(opts *PlatformAgnosticOptions, platform hyperv1
 // runs before each test.
 func (h *hypershiftTest) before(hostedCluster *hyperv1.HostedCluster, opts *PlatformAgnosticOptions, platform hyperv1.PlatformType) {
 	h.Run("ValidateHostedCluster", func(t *testing.T) {
-		if platform != hyperv1.NonePlatform {
+		if platform != hyperv1.NonePlatform && hostedCluster.Spec.Networking.NetworkType != hyperv1.Other {
 			if opts.AWSPlatform.EndpointAccess == string(hyperv1.Private) {
 				ValidatePrivateCluster(t, h.ctx, h.client, hostedCluster, opts)
 			} else {
@@ -135,6 +135,16 @@ func (h *hypershiftTest) before(hostedCluster *hyperv1.HostedCluster, opts *Plat
 			// TODO(ahmed): when OCPBUGS-61291 is fixed, we should move this validation outside of this if block.
 			if opts.ExtOIDCConfig != nil && opts.ExtOIDCConfig.ExternalOIDCProvider == ProviderKeycloak {
 				ValidateAuthenticationSpec(t, h.ctx, h.client, hostedCluster, opts.ExtOIDCConfig)
+			}
+		}
+		if platform == hyperv1.AzurePlatform && azureutil.IsAroHCP() && hostedCluster.Spec.Networking.NetworkType == hyperv1.Other {
+			if !util.IsPrivateHC(hostedCluster) {
+				guestClient := WaitForGuestClient(t, context.Background(), h.client, hostedCluster)
+				InstallCiliumNetworkPolicies(t, context.Background(), guestClient, hostedCluster)
+				// wait hosted cluster ready
+				WaitForNReadyNodes(t, context.Background(), guestClient, opts.NodePoolReplicas, platform)
+				WaitForImageRollout(t, context.Background(), h.client, hostedCluster)
+				ValidateHostedClusterConditions(t, context.Background(), h.client, hostedCluster, true, 10*time.Minute)
 			}
 		}
 	})
