@@ -171,6 +171,26 @@ func TestCreateCluster(t *testing.T) {
 				"--kas-dns-name=test-dns-name.example.com",
 			},
 		},
+		{
+			name: "create with azure marketplace image and Gen1 image generation",
+			args: []string{
+				"--azure-creds=" + credentialsFile,
+				"--infra-json=" + infraFile,
+				"--name=gen1-cluster",
+				"--location=eastus",
+				"--node-pool-replicas=3",
+				"--base-domain=base.domain.com",
+				"--release-image=fake-release-image",
+				"--marketplace-publisher=azureopenshift",
+				"--marketplace-offer=aro4",
+				"--marketplace-sku=aro_414",
+				"--marketplace-version=414.92.2024021",
+				"--image-generation=Gen1",
+				"--pull-secret=" + pullSecretFile,
+				"--managed-identities-file", filepath.Join(tempDir, "managedIdentities.json"),
+				"--data-plane-identities-file", filepath.Join(tempDir, "dataPlaneIdentities.json"),
+			},
+		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			flags := pflag.NewFlagSet(testCase.name, pflag.ContinueOnError)

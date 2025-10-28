@@ -324,14 +324,29 @@ func (o *CreateOptions) GenerateNodePools(constructor core.DefaultNodePoolConstr
 	var vmImage hyperv1.AzureVMImage
 	if o.MarketplacePublisher != "" {
 		// Use marketplace image when marketplace flags are provided
+		marketplaceImage := &hyperv1.AzureMarketplaceImage{
+			Publisher: o.MarketplacePublisher,
+			Offer:     o.MarketplaceOffer,
+			SKU:       o.MarketplaceSKU,
+			Version:   o.MarketplaceVersion,
+		}
+
+		// Set ImageGeneration if specified by the user
+		if o.NodePoolOpts.ImageGeneration != "" {
+			switch o.NodePoolOpts.ImageGeneration {
+			case "Gen1":
+				marketplaceImage.ImageGeneration = ptr.To(hyperv1.Gen1)
+			case "Gen2":
+				marketplaceImage.ImageGeneration = ptr.To(hyperv1.Gen2)
+			default:
+				// This should never happen due to validation, but defensive programming
+				marketplaceImage.ImageGeneration = ptr.To(hyperv1.Gen2)
+			}
+		}
+
 		vmImage = hyperv1.AzureVMImage{
-			Type: hyperv1.AzureMarketplace,
-			AzureMarketplace: &hyperv1.AzureMarketplaceImage{
-				Publisher: o.MarketplacePublisher,
-				Offer:     o.MarketplaceOffer,
-				SKU:       o.MarketplaceSKU,
-				Version:   o.MarketplaceVersion,
-			},
+			Type:             hyperv1.AzureMarketplace,
+			AzureMarketplace: marketplaceImage,
 		}
 	} else if o.infra.BootImageID != "" {
 		// Use boot image ID only when it's been explicitly set during infra creation
