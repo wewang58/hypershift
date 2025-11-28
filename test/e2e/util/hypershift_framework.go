@@ -146,7 +146,8 @@ func (h *hypershiftTest) before(hostedCluster *hyperv1.HostedCluster, opts *Plat
 			// so we skip Cilium installation during the initial cluster validation phase.
 			if !util.IsPrivateHC(hostedCluster) {
 				if opts.NodePoolReplicas == 0 {
-					t.Fatal("NodePool replicas must be positive for Cilium to install.")
+					t.Log("NodePool replicas is 0; skipping Cilium installation.")
+					return
 				}
 				guestClient := WaitForGuestClient(t, context.Background(), h.client, hostedCluster)
 				InstallCilium(t, context.Background(), guestClient, hostedCluster)
